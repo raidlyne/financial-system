@@ -16,17 +16,31 @@ public class ExpenseService : IExpenseService
 
     public async Task<ExpenseResponse> CreateExpenseAsync(string userId, CreateExpenseRequest request)
     {
-        // 1. Нормализация даты (DateOnly)
         var expenseDate = request.Date ?? DateOnly.FromDateTime(DateTime.UtcNow);
 
-        // 2. Валидация (не будущая дата)
         if (expenseDate > DateOnly.FromDateTime(DateTime.UtcNow))
             throw new ArgumentException("Дата не может быть в будущем");
 
-        // 3. Проверка лимита бюджета
+        // === ПРОВЕРКА СУЩЕСТВОВАНИЯ КАТЕГОРИИ ===
+        var categoryExists = await _context.Categories.AnyAsync(c => c.Id == request.CategoryId);
+        if (!categoryExists)
+        {
+            throw new ArgumentException($"Категория с ID {request.CategoryId} не найдена");
+        }
+        // ========================================
+
+        // Проверка тегов (если она у тебя уже есть)
+        if (request.TagIds != null && request.TagIds.Any())
+        {
+            var existingTagCount = await _context.Tags.CountAsync(t => request.TagIds.Contains(t.Id));
+            if (existingTagCount != request.TagIds.Count)
+            {
+                throw new ArgumentException("Один или несколько указанных тегов не существуют");
+            }
+        }
+
         await CheckBudgetLimitAsync(userId, request.CategoryId, request.Amount, expenseDate);
 
-        // 4. Создание сущности
         var expense = new Expense
         {
             UserId = userId,
@@ -34,13 +48,14 @@ public class ExpenseService : IExpenseService
             Amount = request.Amount,
             Date = expenseDate,
             Description = request.Description,
-            ExpenseTags = request.TagIds.Select(tagId => new ExpenseTag { TagId = tagId }).ToList()
+            ExpenseTags = request.TagIds?.Select(tagId => new ExpenseTag { TagId = tagId }).ToList() ?? new List<ExpenseTag>()
         };
 
         _context.Expenses.Add(expense);
         await _context.SaveChangesAsync();
 
-        return await MapToResponse(expense);
+        return await GetExpenseByIdAsync(userId, expense.Id) 
+               ?? throw new InvalidOperationException("Ошибка при получении созданной траты");
     }
 
     public async Task<List<ExpenseResponse>> GetExpensesAsync(string userId, DateOnly? dateFilter)
@@ -77,40 +92,48 @@ public class ExpenseService : IExpenseService
 
         bool isBudgetCheckNeeded = false;
 
-        // 1. Обновление суммы
         if (request.Amount.HasValue)
         {
             expense.Amount = request.Amount.Value;
             isBudgetCheckNeeded = true;
         }
 
-        // 2. Обновление даты (теперь DateOnly, никаких Kind)
         if (request.Date.HasValue)
         {
             if (request.Date.Value > DateOnly.FromDateTime(DateTime.UtcNow))
-            {
                 throw new ArgumentException("Дата не может быть в будущем");
-            }
+            
             expense.Date = request.Date.Value;
             isBudgetCheckNeeded = true;
         }
 
-        // 3. Обновление описания
         if (request.Description != null)
-        {
             expense.Description = request.Description;
-        }
 
-        // 4. Обновление категории
         if (request.CategoryId.HasValue)
         {
+            var categoryExists = await _context.Categories.AnyAsync(c => c.Id == request.CategoryId.Value);
+            if (!categoryExists)
+            {
+                throw new ArgumentException($"Категория с ID {request.CategoryId.Value} не найдена");
+            }
+
             expense.CategoryId = request.CategoryId.Value;
             isBudgetCheckNeeded = true;
         }
 
-        // 5. Обновление тегов
         if (request.TagIds != null)
         {
+            // Проверка тегов
+            if (request.TagIds.Any())
+            {
+                 var existingTagCount = await _context.Tags.CountAsync(t => request.TagIds.Contains(t.Id));
+                 if (existingTagCount != request.TagIds.Count)
+                 {
+                     throw new ArgumentException("Один или несколько указанных тегов не существуют");
+                 }
+            }
+           
             expense.ExpenseTags.Clear();
             foreach (var tagId in request.TagIds)
             {
@@ -118,14 +141,35 @@ public class ExpenseService : IExpenseService
             }
         }
 
-        // 6. Финальная проверка бюджета
         if (isBudgetCheckNeeded)
         {
             await CheckBudgetLimitAsync(userId, expense.CategoryId, expense.Amount, expense.Date);
         }
 
         await _context.SaveChangesAsync();
-        return await MapToResponse(expense);
+        return await GetExpenseByIdAsync(userId, id);
+    }
+
+    // Вспомогательный метод для получения одной траты с полными данными
+    private async Task<ExpenseResponse?> GetExpenseByIdAsync(string userId, int id)
+    {
+        var expense = await _context.Expenses
+            .Include(e => e.Category)
+            .Include(e => e.ExpenseTags).ThenInclude(et => et.Tag)
+            .FirstOrDefaultAsync(e => e.Id == id && e.UserId == userId);
+
+        if (expense == null) return null;
+
+        return new ExpenseResponse
+        {
+            Id = expense.Id,
+            CategoryId = expense.CategoryId,
+            CategoryName = expense.Category?.Name ?? "Unknown",
+            Amount = expense.Amount,
+            Date = expense.Date,
+            Description = expense.Description,
+            Tags = expense.ExpenseTags.Select(et => et.Tag?.Name ?? "").ToList()
+        };
     }
 
     public async Task<bool> DeleteExpenseAsync(string userId, int id)

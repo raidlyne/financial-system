@@ -43,7 +43,13 @@ public class CategoryService : ICategoryService
 
     public async Task UpdateBudgetAsync(string userId, int categoryId, decimal? limitAmount)
     {
-        // Ищем существующий бюджет для этой категории у этого пользователя
+        var categoryExists = await _context.Categories.AnyAsync(c => c.Id == categoryId);
+        if (!categoryExists)
+        {
+            throw new ArgumentException($"Категория с ID {categoryId} не найдена");
+        }
+
+        // 2. Ищем существующий бюджет для этой категории у этого пользователя
         var budget = await _context.Budgets
             .FirstOrDefaultAsync(b => b.UserId == userId && b.CategoryId == categoryId);
 
@@ -57,7 +63,7 @@ public class CategoryService : ICategoryService
         }
         else
         {
-            // Валидация значения (на всякий случай, хотя есть атрибуты в DTO)
+            // Валидация значения
             if (limitAmount < 1 || limitAmount > 10_000_000)
             {
                 throw new ArgumentException("Лимит должен быть от 1 до 10 000 000");
