@@ -1,68 +1,62 @@
 import React from 'react';
-import { Layout as AntLayout, Menu, Button, Space } from 'antd';
-import { UserOutlined, LogoutOutlined } from '@ant-design/icons';
+import { Layout as AntLayout, Menu, Button, Flex } from 'antd';
+import { UserOutlined } from '@ant-design/icons';
 import { Link, useNavigate, useLocation } from 'react-router';
 import { useAuth } from '../context/AuthContext';
-import { authApi } from '../api/auth';
 
 const { Header, Content, Footer } = AntLayout;
 
 const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const { user, logout } = useAuth();
+    const { user } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
 
-    const handleLogout = async () => {
-        try {
-            await authApi.logout();
-            logout();
-            navigate('/sign-in');
-        } catch (e) {
-            console.error(e);
-        }
-    };
 
-    // Элементы меню
+    // Элементы меню (только навигация по разделам приложения)
     const menuItems = [
         {
             key: '/me',
             icon: <UserOutlined />,
             label: <Link to="/me">Профиль</Link>,
         },
-        // Сюда можно добавить другие разделы, например "Траты"
+        // Будущие разделы:
+        // { key: '/expenses', label: <Link to="/expenses">Траты</Link> },
     ];
 
     return (
         <AntLayout style={{ minHeight: '100vh' }}>
-            <Header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 24px' }}>
-                <div style={{ color: 'white', fontSize: '20px', fontWeight: 'bold' }}>
+            <Header style={{ display: 'flex', alignItems: 'center', padding: '0 24px', justifyContent: 'space-between' }}>
+
+                {/* 1. Логотип слева */}
+                <div style={{ color: 'white', fontSize: '20px', fontWeight: 'bold', minWidth: 100 }}>
                     ERP FinTech
                 </div>
 
-                <Space>
-                    {/* Меню навигации (если нужно) */}
+                {/* 2. Меню по центру */}
+                <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
                     <Menu
                         theme="dark"
                         mode="horizontal"
                         selectedKeys={[location.pathname]}
                         items={menuItems}
-                        style={{ minWidth: 0, flex: 'none', background: 'transparent' }}
+                        style={{ borderBottom: 'none', background: 'transparent' }}
                     />
+                </div>
 
-                    {/* Кнопка входа или Профиль */}
+                {/* 3. Кнопка входа/профиля справа */}
+                <div style={{ minWidth: 100, display: 'flex', justifyContent: 'flex-end' }}>
                     {user ? (
-                        <Space>
-                            <span style={{ color: 'white' }}>{user}</span>
-                            <Button icon={<LogoutOutlined />} onClick={handleLogout}>
-                                Выход
-                            </Button>
-                        </Space>
+                        <Flex align="center" gap="small">
+                            <Link to="/me">
+                                {user}
+                            </Link>
+                        </Flex>
                     ) : (
                         <Button type="primary" onClick={() => navigate('/sign-in')}>
                             Вход
                         </Button>
                     )}
-                </Space>
+                </div>
             </Header>
 
             <Content style={{ padding: '24px', minHeight: 'calc(100vh - 134px)' }}>

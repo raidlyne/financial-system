@@ -3,13 +3,19 @@ import { Form, Input, Button, Card, message } from 'antd';
 import { useNavigate, Link } from 'react-router';
 import { authApi } from '../api/auth';
 
+// Функция валидации пароля
+const validatePassword = (password: string): string | null => {
+    if (password.length < 6) return 'Минимум 6 символов';
+    if (!/[A-Z]/.test(password)) return 'Нужна заглавная буква';
+    if (!/[a-z]/.test(password)) return 'Нужна строчная буква';
+    if (!/[^a-zA-Z0-9]/.test(password)) return 'Нужен специальный символ (например, !, @, #, _)';
+    return null;
+};
+
 const Register: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [form] = Form.useForm();
     const navigate = useNavigate();
-
-    // Регулярка: мин 6 символов, 1 заглавная, 1 строчная, 1 не-буква
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z]).{6,}$/;
 
     const onFinish = async (values: { username: string; password: string }) => {
         setLoading(true);
@@ -17,21 +23,15 @@ const Register: React.FC = () => {
             await authApi.register(values);
             message.success('Регистрация успешна! Теперь войдите.');
             navigate('/sign-in');
-        } catch (error: any) {
-            // Если ошибка валидации Identity (например, юзер занят)
-            const errors = error.response?.data;
-            if (Array.isArray(errors)) {
-                errors.forEach((err: any) => message.error(err.description));
-            } else {
-                message.error('Ошибка регистрации');
-            }
+        } catch {
+            message.error('Такой юзернейм уже существует')
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
             <Card title="Регистрация" style={{ width: 400 }}>
                 <Form form={form} name="register" onFinish={onFinish} layout="vertical">
                     <Form.Item name="username" label="Юзернейм" rules={[{ required: true }]}>
@@ -42,8 +42,13 @@ const Register: React.FC = () => {
                         name="password"
                         label="Пароль"
                         rules={[
-                            { required: true },
-                            { pattern: passwordRegex, message: 'Пароль должен содержать мин. 6 символов, заглавную, строчную букву и спецсимвол' }
+                            { required: true, message: 'Введите пароль' },
+                            {
+                                validator: (_, value) => {
+                                    const error = validatePassword(value || '');
+                                    return error ? Promise.reject(new Error(error)) : Promise.resolve();
+                                }
+                            }
                         ]}
                         hasFeedback
                     >
@@ -56,7 +61,7 @@ const Register: React.FC = () => {
                         dependencies={['password']}
                         hasFeedback
                         rules={[
-                            { required: true },
+                            { required: true, message: 'Повторите пароль' },
                             ({ getFieldValue }) => ({
                                 validator(_, value) {
                                     if (!value || getFieldValue('password') === value) {

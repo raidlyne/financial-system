@@ -14,17 +14,17 @@ const Login: React.FC = () => {
         try {
             await authApi.login(values);
             message.success('Успешный вход!');
-            login(values.username); // Обновляем состояние в контексте
+            login(values.username);
             navigate('/me');
-        } catch (error: any) {
-            message.error(error.response?.data || 'Ошибка входа. Проверьте данные.');
+        } catch  {
+            message.error('Ошибка входа. Проверьте данные.');
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
             <Card title="Вход в систему" style={{ width: 400 }}>
                 <Form name="login" onFinish={onFinish} layout="vertical">
                     <Form.Item name="username" label="Юзернейм" rules={[{ required: true }]}>

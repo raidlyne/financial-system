@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Button, Space, Typography, Divider, Popconfirm, message } from 'antd';
+import { Card, Button, Typography, Divider, Popconfirm, message, Flex } from 'antd'; // Используем Flex вместо Space где нужно
 import { useAuth } from '../context/AuthContext';
 import { authApi } from '../api/auth';
 import { useNavigate } from 'react-router';
@@ -16,7 +16,7 @@ const Profile: React.FC = () => {
             logout();
             message.success('Аккаунт удален');
             navigate('/sign-in');
-        } catch (e) {
+        } catch {
             message.error('Ошибка при удалении');
         }
     };
@@ -24,7 +24,7 @@ const Profile: React.FC = () => {
     return (
         <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 50 }}>
             <Card title="Профиль пользователя" style={{ width: 500 }}>
-                <Space direction="vertical" size="large" style={{ width: '100%' }}>
+                <Flex vertical gap="large" style={{ width: '100%' }}>
                     <div>
                         <Title level={4}>Юзернейм:</Title>
                         <Title level={2}>{user}</Title>
@@ -32,7 +32,7 @@ const Profile: React.FC = () => {
 
                     <Divider />
 
-                    <Space direction="vertical" style={{ width: '100%' }}>
+                    <Flex vertical gap="middle" style={{ width: '100%' }}>
                         <Button type="primary" danger block onClick={() => navigate('/sign-in')}>
                             Выйти из аккаунта
                         </Button>
@@ -48,12 +48,11 @@ const Profile: React.FC = () => {
                                 Удалить аккаунт
                             </Button>
                         </Popconfirm>
-                    </Space>
-                </Space>
+                    </Flex>
+                </Flex>
             </Card>
         </div>
     );
 };
 
 export default Profile;
-
