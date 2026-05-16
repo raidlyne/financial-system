@@ -1,4 +1,4 @@
-﻿using FinancialSystem.DTOs;
+﻿using FinancialSystem.DTOs; 
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
@@ -18,7 +18,11 @@ public class AuthController : ControllerBase
         _signInManager = signInManager;
     }
 
+    /// <summary>
+    /// Регистрация нового пользователя
+    /// </summary>
     [HttpPost("register")]
+    [AllowAnonymous] // Доступно всем
     public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
         var user = new IdentityUser { UserName = request.Username };
@@ -30,7 +34,11 @@ public class AuthController : ControllerBase
         return Ok(new { message = "User registered successfully" });
     }
 
+    /// <summary>
+    /// Вход в систему (устанавливает куки)
+    /// </summary>
     [HttpPost("login")]
+    [AllowAnonymous]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
         var user = await _userManager.FindByNameAsync(request.Username);
@@ -43,17 +51,46 @@ public class AuthController : ControllerBase
 
         return Ok(new { message = "Logged in successfully" });
     }
-    
+
+    /// <summary>
+    /// Получение информации о текущем авторизованном пользователе
+    /// </summary>
+    [HttpGet]
+    [Authorize] // Только для авторизованных
+    public async Task<IActionResult> GetCurrentUser()
+    {
+        var user = await _userManager.GetUserAsync(User);
+        if (user == null)
+            return NotFound("User not found");
+
+        return Ok(new { username = user.UserName });
+    }
+
+    /// <summary>
+    /// Удаление аккаунта текущего пользователя
+    /// </summary>
     [HttpDelete]
     [Authorize]
     public async Task<IActionResult> DeleteAccount()
     {
         var user = await _userManager.GetUserAsync(User);
         if (user == null) return NotFound();
+
         
         await _userManager.DeleteAsync(user);
         await _signInManager.SignOutAsync();
         
         return Ok(new { message = "Account deleted" });
+    }
+    
+    /// <summary>
+    /// Выход из системы (очистка кук)
+    /// </summary>
+    [HttpPost("logout")]
+    [Authorize]
+    public async Task<IActionResult> Logout()
+    {
+        await _signInManager.SignOutAsync();
+        return Ok(new { message = "Logged out successfully" });
     }
 }
