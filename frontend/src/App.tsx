@@ -7,6 +7,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Profile from './pages/Profile';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import Expenses from "./pages/Expenses.tsx";
 
 // Глобальные стили для темного фона всего приложения
 const globalStyles = `
@@ -40,7 +41,7 @@ const AppContent: React.FC = () => {
                 <Route path="/" element={
                     <ProtectedRoute>
                         <AppLayout>
-                            <Profile />
+                            <Expenses />
                         </AppLayout>
                     </ProtectedRoute>
                 } />

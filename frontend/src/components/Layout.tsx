@@ -6,6 +6,10 @@ import { useAuth } from '../context/AuthContext';
 
 const { Header, Content, Footer } = AntLayout;
 
+function ShoppingCartOutlined() {
+    return null;
+}
+
 const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { user } = useAuth();
     const navigate = useNavigate();
@@ -14,6 +18,11 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
     // Элементы меню (только навигация по разделам приложения)
     const menuItems = [
+        {
+            key: '/', // Или '/expenses'
+            icon: <ShoppingCartOutlined />, // Не забудь импортировать иконку
+            label: <Link to="/">Траты</Link>,
+        },
         {
             key: '/me',
             icon: <UserOutlined />,
