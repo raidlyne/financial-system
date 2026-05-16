@@ -24,9 +24,6 @@ public class UpdateExpenseRequest
     [Range(1, 10_000_000, ErrorMessage = "Сумма должна быть от 1 до 10 000 000")]
     public decimal? Amount { get; set; }
 
-    // ИЗМЕНЕНО
-    public DateOnly? Date { get; set; }
-
     [StringLength(200, ErrorMessage = "Описание не должно превышать 200 символов")]
     public string? Description { get; set; }
 

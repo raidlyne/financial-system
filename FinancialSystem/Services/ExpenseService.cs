@@ -98,15 +98,6 @@ public class ExpenseService : IExpenseService
             isBudgetCheckNeeded = true;
         }
 
-        if (request.Date.HasValue)
-        {
-            if (request.Date.Value > DateOnly.FromDateTime(DateTime.UtcNow))
-                throw new ArgumentException("Дата не может быть в будущем");
-            
-            expense.Date = request.Date.Value;
-            isBudgetCheckNeeded = true;
-        }
-
         if (request.Description != null)
             expense.Description = request.Description;
 
