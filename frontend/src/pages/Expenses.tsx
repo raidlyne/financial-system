@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useRef, useState } from 'react';
-import type { GetRef, InputRef, TableProps } from 'antd';
+import {type GetRef, InputNumber, type InputRef, Modal, type TableProps} from 'antd';
 import {
     Button,
     Form,
@@ -123,6 +123,8 @@ const Expenses: React.FC = () => {
     const [selectedDate, setSelectedDate] = useState<Dayjs>(dayjs());
     const [dataSource, setDataSource] = useState<Expense[]>([]);
     const [loading, setLoading] = useState(false);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [createForm] = Form.useForm(); // Форма для создания новой траты
 
     // Справочники
     const [categories, setCategories] = useState<Category[]>([]);
@@ -228,6 +230,46 @@ const Expenses: React.FC = () => {
         } catch { message.error('Ошибка удаления'); }
     };
 
+    const showModal = () => {
+        // Устанавливаем начальную дату равной выбранной в календаре
+        createForm.setFieldsValue({
+            date: selectedDate,
+            amount: undefined,
+            description: '',
+            categoryId: undefined,
+            tagIds: []
+        });
+        setIsModalOpen(true);
+    };
+
+    const handleCancel = () => {
+        setIsModalOpen(false);
+        createForm.resetFields();
+    };
+    const handleCreateSubmit = async (values: any) => {
+        try {
+            // Формируем объект для отправки
+            const payload = {
+                categoryId: values.categoryId,
+                amount: values.amount,
+                description: values.description,
+                tagIds: values.tagIds || [],
+                date: selectedDate.format('YYYY-MM-DD')
+            };
+
+            await expensesApi.create(payload);
+            message.success('Трата успешно добавлена');
+            setIsModalOpen(false);
+            createForm.resetFields();
+
+            // Перезагружаем список, чтобы увидеть новую трату
+            loadExpenses(selectedDate);
+        } catch (error: any) {
+            console.error(error);
+            message.error(error.response?.data?.message || 'Ошибка при создании траты');
+        }
+    };
+
     // Опции для селектов
     const categoryOptions = categories.map(c => ({ label: c.name, value: c.id }));
     const tagOptions = tags.map(t => ({ label: t.name, value: t.id }));
@@ -293,30 +335,15 @@ const Expenses: React.FC = () => {
 
     return (
         <div style={{ padding: '24px', minHeight: '100vh' }}>
-            {/* Добавляем стиль для принудительного переноса текста в ячейках таблицы */}
             <style>{`
-                .editable-cell-value-wrap:hover { 
-                    border: 1px solid #d9d9d9; 
-                    border-radius: 2px; 
-                    padding: 4px 11px !important; 
-                    background-color: rgba(255,255,255, 0.05); 
-                }
-                /* Принудительный перенос слов в таблице */
-                .ant-table-tbody > tr > td {
-                    white-space: normal !important;
-                    word-break: break-word !important;
-                }
+                .editable-cell-value-wrap:hover { border: 1px solid #d9d9d9; border-radius: 2px; padding: 4px 11px !important; background-color: rgba(255,255,255, 0.05); }
+                .ant-table-tbody > tr > td { white-space: normal !important; word-break: break-word !important; }
             `}</style>
 
             <Flex gap="large" align="start" wrap="wrap">
                 <div style={{ width: 350, flexShrink: 0, minWidth: '300px' }}>
                     <Card title="Выберите дату" variant="borderless" style={{ marginBottom: 16 }}>
-                        <Calendar
-                            value={selectedDate}
-                            onSelect={onSelect}
-                            disabledDate={disabledDate}
-                            fullscreen={false}
-                        />
+                        <Calendar value={selectedDate} onSelect={onSelect} disabledDate={disabledDate} fullscreen={false} />
                     </Card>
                 </div>
 
@@ -324,16 +351,15 @@ const Expenses: React.FC = () => {
                     <Card
                         title={`Траты за ${selectedDate.format('DD.MM.YYYY')}`}
                         extra={
-                            <Button type="primary" icon={<PlusOutlined />}>
+                            // Кнопка теперь открывает модалку
+                            <Button type="primary" icon={<PlusOutlined />} onClick={showModal}>
                                 Добавить
                             </Button>
                         }
                     >
                         <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <Text type="secondary">Список операций</Text>
-                            <Text strong style={{ fontSize: 18 }}>
-                                Итого: {totalAmount.toLocaleString()} ₽
-                            </Text>
+                            <Text strong style={{ fontSize: 18 }}>Итого: {totalAmount.toLocaleString()} ₽</Text>
                         </div>
 
                         {loading ? (
@@ -350,16 +376,88 @@ const Expenses: React.FC = () => {
                                 dataSource={dataSource}
                                 columns={columns}
                                 pagination={false}
-                                // Убираем x: true, так как мы задали ширины колонок вручную.
-                                // Если сумма ширин превысит экран, появится скролл, но контент будет переноситься внутри ячеек.
                                 scroll={{ y: 400 }}
                             />
                         )}
                     </Card>
                 </div>
             </Flex>
+
+            {/* МОДАЛЬНОЕ ОКНО СОЗДАНИЯ ТРАТЫ */}
+            <Modal
+                title={`Новая трата на ${selectedDate.format('DD.MM.YYYY')}`} // Показываем дату прямо в заголовке
+                open={isModalOpen}
+                onCancel={handleCancel}
+                footer={null}
+            >
+                <Form
+                    form={createForm}
+                    layout="vertical"
+                    onFinish={handleCreateSubmit}
+                    initialValues={{
+                        // Убираем date отсюда, так как оно не нужно в форме
+                        amount: undefined,
+                        description: '',
+                        categoryId: undefined,
+                        tagIds: []
+                    }}
+                    style={{ marginTop: 20 }}
+                >
+                    <Form.Item
+                        name="categoryId"
+                        label="Категория"
+                        rules={[{ required: true, message: 'Выберите категорию' }]}
+                    >
+                        <Select placeholder="Выберите категорию" options={categoryOptions} />
+                    </Form.Item>
+
+                    <Form.Item
+                        name="amount"
+                        label="Сумма"
+                        rules={[{ required: true, message: 'Введите сумму' }]}
+                    >
+                        <InputNumber
+                            style={{ width: '100%' }}
+                            min={0.01}
+                            step={0.01}
+                            placeholder="0.00"
+                            prefix="₽"
+                        />
+                    </Form.Item>
+
+                    <Form.Item
+                        name="description"
+                        label="Описание"
+                        rules={[{ required: true, message: 'Введите описание' }]}
+                    >
+                        <Input.TextArea rows={3} placeholder="Например: Обед в кафе" />
+                    </Form.Item>
+
+                    <Form.Item
+                        name="tagIds"
+                        label="Теги"
+                    >
+                        <Select
+                            mode="multiple"
+                            placeholder="Выберите теги"
+                            options={tagOptions}
+                            maxTagCount="responsive"
+                        />
+                    </Form.Item>
+
+                    <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
+                        <Button onClick={handleCancel} style={{ marginRight: 8 }}>
+                            Отмена
+                        </Button>
+                        <Button type="primary" htmlType="submit">
+                            Создать
+                        </Button>
+                    </Form.Item>
+                </Form>
+            </Modal>
         </div>
     );
+;
 };
 
 export default Expenses;
