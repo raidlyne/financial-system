@@ -109,7 +109,7 @@ const EditableCell: React.FC<React.PropsWithChildren<EditableCellProps>> = ({
                 )}
             </Form.Item>
         ) : (
-            <div className="editable-cell-value-wrap" style={{ paddingInlineEnd: 24, cursor: 'pointer' }} onClick={toggleEdit}>
+            <div style={{ paddingInlineEnd: 24, cursor: 'pointer' }} onClick={toggleEdit}>
                 {children}
             </div>
         );
@@ -236,8 +236,7 @@ const Expenses: React.FC = () => {
         {
             title: 'Категория',
             dataIndex: 'categoryId',
-            width: '15%',
-            editable: true,
+            width: 150, // Фиксированная ширина
             selectOptions: categoryOptions,
             render: (_, r) => {
                 const cat = categories.find(c => c.id === r.categoryId);
@@ -248,8 +247,7 @@ const Expenses: React.FC = () => {
         {
             title: 'Сумма',
             dataIndex: 'amount',
-            width: '10%',
-            editable: true,
+            width: 100, // Фиксированная ширина
             inputType: 'number',
             render: (t) => <Text strong>{Number(t).toLocaleString()}</Text>,
             onCell: (record) => ({ record, editable: true, dataIndex: 'amount', title: 'Сумма', inputType: 'number', handleSave })
@@ -257,25 +255,31 @@ const Expenses: React.FC = () => {
         {
             title: 'Описание',
             dataIndex: 'description',
-            width: '25%',
-            editable: true,
+            width: 200, // Можно задать фиксированную или %
             inputType: 'text',
-            render: (t) => t || <Text type="secondary">-</Text>,
+            // ellipsis: false разрешает перенос строк
+            ellipsis: false,
+            render: (t) => t ? <span style={{ whiteSpace: 'pre-wrap' }}>{t}</span> : <Text type="secondary">-</Text>,
             onCell: (record) => ({ record, editable: true, dataIndex: 'description', title: 'Описание', inputType: 'text', handleSave })
         },
         {
             title: 'Теги',
-            dataIndex: 'tagIds', // Редактируем ID
-            width: '25%',
-            editable: true,
+            dataIndex: 'tagIds',
+            width: 150, // Фиксированная ширина
             isMultiSelect: true,
             selectOptions: tagOptions,
-            render: (_, r) => r.tags.map(tag => <Tag key={tag} color="blue">{tag}</Tag>), // Отображаем имена
+            ellipsis: false,
+            render: (_, r) => (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                    {r.tags.map(tag => <Tag key={tag} color="blue">{tag}</Tag>)}
+                </div>
+            ),
             onCell: (record) => ({ record, editable: true, dataIndex: 'tagIds', title: 'Теги', selectOptions: tagOptions, isMultiSelect: true, handleSave })
         },
         {
-            title: '',
-            width: '5%',
+            title: 'Действия',
+            width: 100,
+            fixed: 'right', // Закрепляем кнопку удаления справа
             render: (_, r) => (
                 <Popconfirm title="Удалить?" onConfirm={() => handleDelete(r.key)}>
                     <Button type="text" danger icon={<DeleteOutlined />} />
@@ -288,18 +292,68 @@ const Expenses: React.FC = () => {
     const totalAmount = dataSource.reduce((sum, i) => sum + Number(i.amount), 0);
 
     return (
-        <div style={{ padding: '24px' }}>
-            <style>{`.editable-cell-value-wrap:hover { border: 1px solid #d9d9d9; border-radius: 2px; padding: 4px 11px !important; background-color: rgba(255,255,255, 0.05); }`}</style>
-            <Flex gap="large" align="start">
-                <div style={{ width: 350, flexShrink: 0 }}>
-                    <Card title="Дата" bordered={false}>
-                        <Calendar value={selectedDate} onSelect={onSelect} disabledDate={disabledDate} fullscreen={false} />
+        <div style={{ padding: '24px', minHeight: '100vh' }}>
+            {/* Добавляем стиль для принудительного переноса текста в ячейках таблицы */}
+            <style>{`
+                .editable-cell-value-wrap:hover { 
+                    border: 1px solid #d9d9d9; 
+                    border-radius: 2px; 
+                    padding: 4px 11px !important; 
+                    background-color: rgba(255,255,255, 0.05); 
+                }
+                /* Принудительный перенос слов в таблице */
+                .ant-table-tbody > tr > td {
+                    white-space: normal !important;
+                    word-break: break-word !important;
+                }
+            `}</style>
+
+            <Flex gap="large" align="start" wrap="wrap">
+                <div style={{ width: 350, flexShrink: 0, minWidth: '300px' }}>
+                    <Card title="Выберите дату" variant="borderless" style={{ marginBottom: 16 }}>
+                        <Calendar
+                            value={selectedDate}
+                            onSelect={onSelect}
+                            disabledDate={disabledDate}
+                            fullscreen={false}
+                        />
                     </Card>
                 </div>
-                <div style={{ flex: 1 }}>
-                    <Card title={`Траты за ${selectedDate.format('DD.MM.YYYY')} (Итого: ${totalAmount.toLocaleString()} ₽)`} extra={<Button type="primary" icon={<PlusOutlined />}>Добавить</Button>}>
-                        {loading ? <Spin size="large" /> : dataSource.length === 0 ? <Empty description="Нет трат" /> : (
-                            <Table components={components} rowClassName="editable-row" bordered dataSource={dataSource} columns={columns} pagination={false} scroll={{ y: 400 }} />
+
+                <div style={{ flex: 1, minWidth: '300px' }}>
+                    <Card
+                        title={`Траты за ${selectedDate.format('DD.MM.YYYY')}`}
+                        extra={
+                            <Button type="primary" icon={<PlusOutlined />}>
+                                Добавить
+                            </Button>
+                        }
+                    >
+                        <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Text type="secondary">Список операций</Text>
+                            <Text strong style={{ fontSize: 18 }}>
+                                Итого: {totalAmount.toLocaleString()} ₽
+                            </Text>
+                        </div>
+
+                        {loading ? (
+                            <div style={{ textAlign: 'center', padding: '40px' }}>
+                                <Spin size="large" />
+                            </div>
+                        ) : dataSource.length === 0 ? (
+                            <Empty description="Нет трат за этот день" />
+                        ) : (
+                            <Table
+                                components={components}
+                                rowClassName="editable-row"
+                                bordered
+                                dataSource={dataSource}
+                                columns={columns}
+                                pagination={false}
+                                // Убираем x: true, так как мы задали ширины колонок вручную.
+                                // Если сумма ширин превысит экран, появится скролл, но контент будет переноситься внутри ячеек.
+                                scroll={{ y: 400 }}
+                            />
                         )}
                     </Card>
                 </div>
