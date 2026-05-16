@@ -61,25 +61,29 @@ public class ExpenseService : IExpenseService
     public async Task<List<ExpenseResponse>> GetExpensesAsync(string userId, DateOnly? dateFilter)
     {
         IQueryable<Expense> query = _context.Expenses
+            .AsNoTracking() // Важно для производительности чтения
             .Include(e => e.Category)
             .Include(e => e.ExpenseTags).ThenInclude(et => et.Tag)
             .Where(e => e.UserId == userId);
 
         if (dateFilter.HasValue)
         {
-            // Фильтрация по конкретному дню
             query = query.Where(e => e.Date == dateFilter.Value);
         }
 
         var expenses = await query.OrderByDescending(e => e.Date).ToListAsync();
-    
-        // Маппинг в список ответов
-        var responses = new List<ExpenseResponse>();
-        foreach (var exp in expenses)
+
+        return expenses.Select(e => new ExpenseResponse
         {
-            responses.Add(await MapToResponse(exp));
-        }
-        return responses;
+            Id = e.Id,
+            CategoryId = e.CategoryId,
+            CategoryName = e.Category?.Name ?? "Unknown",
+            Amount = e.Amount,
+            Date = e.Date,
+            Description = e.Description,
+            Tags = e.ExpenseTags.Select(et => et.Tag?.Name ?? "").ToList(),
+            TagIds = e.ExpenseTags.Select(et => et.TagId).ToList()
+        }).ToList();
     }
 
     public async Task<ExpenseResponse?> UpdateExpenseAsync(string userId, int id, UpdateExpenseRequest request)

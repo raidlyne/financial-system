@@ -41,4 +41,5 @@ public class ExpenseResponse
     public DateOnly Date { get; set; }
     public string? Description { get; set; }
     public List<string> Tags { get; set; } = new();
+    public List<int> TagIds { get; set; } = new();
 }
