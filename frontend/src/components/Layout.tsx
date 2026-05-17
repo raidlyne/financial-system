@@ -1,14 +1,11 @@
 import React from 'react';
 import { Layout as AntLayout, Menu, Button, Flex } from 'antd';
-import {BarChartOutlined, UserOutlined, WalletOutlined} from '@ant-design/icons';
+import {BarChartOutlined, ShoppingCartOutlined, UserOutlined, WalletOutlined} from '@ant-design/icons';
 import { Link, useNavigate, useLocation } from 'react-router';
 import { useAuth } from '../context/AuthContext';
 
 const { Header, Content, Footer } = AntLayout;
 
-function ShoppingCartOutlined() {
-    return null;
-}
 
 const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { user } = useAuth();
@@ -38,8 +35,6 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             icon: <UserOutlined />,
             label: <Link to="/me">Профиль</Link>,
         },
-        // Будущие разделы:
-        // { key: '/expenses', label: <Link to="/expenses">Траты</Link> },
     ];
 
     return (
