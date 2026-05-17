@@ -78,4 +78,12 @@ public class ExpensesController : ControllerBase
         if (!success) return NotFound();
         return NoContent();
     }
+    [HttpGet("dates")]
+    public async Task<IActionResult> GetExpenseDates()
+    {
+        var userId = GetUserId();
+        var dates = await _expenseService.GetExpenseDatesAsync(userId);
+        var dateStrings = dates.Select(d => d.ToString("yyyy-MM-dd")).ToList();
+        return Ok(dateStrings);
+    }
 }

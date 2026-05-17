@@ -10,6 +10,10 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import Statistics from './pages/Statistics';
 import Expenses from "./pages/Expenses.tsx";
 import Budgets from "./pages/Budgets.tsx";
+import dayjs from 'dayjs';
+import 'dayjs/locale/ru';
+
+dayjs.locale('ru');
 
 // Глобальные стили для темного фона всего приложения
 const globalStyles = `

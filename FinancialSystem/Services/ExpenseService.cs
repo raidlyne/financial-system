@@ -227,4 +227,16 @@ public class ExpenseService : IExpenseService
             Tags = expense.ExpenseTags.Select(et => et.Tag?.Name ?? "").ToList()
         };
     }
+    public async Task<List<DateOnly>> GetExpenseDatesAsync(string userId)
+    {
+        var dates = await _context.Expenses
+            .AsNoTracking()
+            .Where(e => e.UserId == userId)
+            .Select(e => e.Date)
+            .Distinct()
+            .OrderBy(d => d)
+            .ToListAsync();
+
+        return dates;
+    }
 }

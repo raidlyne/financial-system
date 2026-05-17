@@ -28,4 +28,5 @@ export const expensesApi = {
     update: (id: number, data: UpdateExpenseDto) => api.patch(`/expenses/${id}`, data),
 
     delete: (id: number) => api.delete(`/expenses/${id}`),
+    getExpenseDates: () => api.get<string[]>('/expenses/dates'),
 };

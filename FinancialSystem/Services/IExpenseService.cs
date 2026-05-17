@@ -10,4 +10,5 @@ public interface IExpenseService
     Task<ExpenseResponse?> UpdateExpenseAsync(string userId, int id, UpdateExpenseRequest request);
     Task<bool> DeleteExpenseAsync(string userId, int id);
     Task CheckBudgetLimitAsync(string userId, int categoryId, decimal newAmount, DateOnly date);
+    Task<List<DateOnly>> GetExpenseDatesAsync(string userId);
 }

@@ -124,6 +124,7 @@ const Expenses: React.FC = () => {
     const [dataSource, setDataSource] = useState<Expense[]>([]);
     const [loading, setLoading] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [expenseDates, setExpenseDates] = useState<Set<string>>(new Set());
     const [createForm] = Form.useForm(); // Форма для создания новой траты
 
     // Справочники
@@ -132,17 +133,23 @@ const Expenses: React.FC = () => {
 
     // Загрузка справочников один раз при старте
     useEffect(() => {
-        const loadDictionaries = async () => {
+        const init = async () => {
             try {
-                const [catsRes, tagsRes] = await Promise.all([
+                const [catsRes, tagsRes, datesRes] = await Promise.all([
                     dictionariesApi.getCategories(),
-                    dictionariesApi.getTags()
+                    dictionariesApi.getTags(),
+                    expensesApi.getExpenseDates()
                 ]);
+
                 setCategories(catsRes.data);
                 setTags(tagsRes.data);
-            } catch (e) { message.error('Ошибка загрузки справочников'); }
+
+                setExpenseDates(new Set(datesRes.data));
+            } catch  {
+                message.error('Ошибка инициализации');
+            }
         };
-        loadDictionaries();
+        init();
     }, []);
 
     // Загрузка трат при смене даты
@@ -227,6 +234,7 @@ const Expenses: React.FC = () => {
             await expensesApi.delete(item.id);
             message.success('Удалено');
             setDataSource(dataSource.filter((d) => d.key !== key));
+            refreshExpenseDates()
         } catch { message.error('Ошибка удаления'); }
     };
 
@@ -264,6 +272,7 @@ const Expenses: React.FC = () => {
 
             // Перезагружаем список, чтобы увидеть новую трату
             loadExpenses(selectedDate);
+            refreshExpenseDates();
         } catch (error: any) {
             console.error(error);
             message.error(error.response?.data?.message || 'Ошибка при создании траты');
@@ -332,6 +341,32 @@ const Expenses: React.FC = () => {
 
     const components = { body: { row: EditableRow, cell: EditableCell } };
     const totalAmount = dataSource.reduce((sum, i) => sum + Number(i.amount), 0);
+    // Функция кастомного рендера ячейки календаря
+    // Функция кастомного рендера ячейки календаря
+    // Функция кастомного рендера ячейки дня в календаре (для fullscreen={false})
+    const dateCellRender = (current: Dayjs) => {
+        const dateStr = current.format('YYYY-MM-DD');
+        const hasExpenses = expenseDates.has(dateStr);
+
+        // Возвращаем только дополнительный контент, число будет отрисовано автоматически
+        return hasExpenses ? (
+            <div style={{
+                width: 6,
+                height: 6,
+                backgroundColor: '#1890ff',
+                borderRadius: '50%',
+                margin: '2px auto 0'
+            }} />
+        ) : null;
+    };
+    const refreshExpenseDates = async () => {
+        try {
+            const datesRes = await expensesApi.getExpenseDates();
+            setExpenseDates(new Set(datesRes.data));
+        } catch  {
+            console.error("Failed to refresh expense dates");
+        }
+    };
 
     return (
         <div style={{ padding: '24px', minHeight: '100vh' }}>
@@ -343,7 +378,7 @@ const Expenses: React.FC = () => {
             <Flex gap="large" align="start" wrap="wrap">
                 <div style={{ width: 350, flexShrink: 0, minWidth: '300px' }}>
                     <Card title="Выберите дату" variant="borderless" style={{ marginBottom: 16 }}>
-                        <Calendar value={selectedDate} onSelect={onSelect} disabledDate={disabledDate} fullscreen={false} />
+                        <Calendar value={selectedDate} onSelect={onSelect} disabledDate={disabledDate} fullscreen={false} cellRender={dateCellRender} />
                     </Card>
                 </div>
 
