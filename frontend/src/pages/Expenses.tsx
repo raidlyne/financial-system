@@ -44,7 +44,7 @@ const EditableRow: React.FC<EditableRowProps> = ({ index, ...props }) => {
 interface EditableCellProps {
     title: React.ReactNode;
     editable: boolean;
-    dataIndex: keyof Expense | 'tagIds'; // tagIds - виртуальное поле для редактирования
+    dataIndex: keyof Expense | 'tagIds';
     record: Expense;
     handleSave: (record: Expense) => void;
     inputType?: 'number' | 'text';
@@ -64,8 +64,6 @@ const EditableCell: React.FC<React.PropsWithChildren<EditableCellProps>> = ({
 
     const toggleEdit = () => {
         setEditing(!editing);
-        // Инициализируем форму значением из рекорда.
-        // Если это tagIds, берем массив чисел.
         const initialValue = dataIndex === 'tagIds' ? record.tagIds : record[dataIndex as keyof Expense];
         form.setFieldsValue({ [dataIndex]: initialValue });
     };
@@ -83,24 +81,32 @@ const EditableCell: React.FC<React.PropsWithChildren<EditableCellProps>> = ({
 
             toggleEdit();
             handleSave({ ...record, ...processedValues });
-        } catch (err) {
+        } catch {
             message.error('Ошибка ввода');
         }
     };
 
     let childNode = children;
 
+    const isEmptyValue = () => {
+        if (selectOptions) {
+            const value = dataIndex === 'tagIds' ? record.tagIds : record[dataIndex as keyof Expense];
+            return !value || (Array.isArray(value) && value.length === 0);
+        }
+        return false;
+    };
+
     if (editable) {
         childNode = editing ? (
-            <Form.Item style={{ margin: 0 }} name={dataIndex} rules={[{ required: true }]}>
+            <Form.Item style={{ margin: 0 }} name={dataIndex} rules={[{ required: false }]}>
                 {selectOptions ? (
                     <Select
                         ref={inputRef as any}
                         onBlur={save}
-                        mode={isMultiSelect ? "tags" : undefined}
+                        mode={isMultiSelect ? "multiple" : undefined}
                         placeholder="Выберите..."
                         options={selectOptions}
-                        tokenSeparators={isMultiSelect ? [','] : undefined}
+                        style={{ width: '100%' }}
                     />
                 ) : inputType === 'number' ? (
                     <Input ref={inputRef} onPressEnter={save} onBlur={save} type="number" min={0.01} step="0.01" />
@@ -109,15 +115,22 @@ const EditableCell: React.FC<React.PropsWithChildren<EditableCellProps>> = ({
                 )}
             </Form.Item>
         ) : (
-            <div style={{ paddingInlineEnd: 24, cursor: 'pointer' }} onClick={toggleEdit}>
-                {children}
+            <div
+                onClick={toggleEdit}
+            >
+                {isEmptyValue() ? (
+                    <span style={{ color: '#999', fontSize: 14 }}>
+                        {selectOptions ? 'Добавить...' : 'Нажмите для редактирования'}
+                    </span>
+                ) : (
+                    children
+                )}
             </div>
         );
     }
     return <td {...restProps}>{childNode}</td>;
 };
 
-// --- Основная страница ---
 
 const Expenses: React.FC = () => {
     const [selectedDate, setSelectedDate] = useState<Dayjs>(dayjs());
@@ -125,13 +138,11 @@ const Expenses: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [expenseDates, setExpenseDates] = useState<Set<string>>(new Set());
-    const [createForm] = Form.useForm(); // Форма для создания новой траты
+    const [createForm] = Form.useForm();
 
-    // Справочники
     const [categories, setCategories] = useState<Category[]>([]);
     const [tags, setTags] = useState<ITag[]>([]);
 
-    // Загрузка справочников один раз при старте
     useEffect(() => {
         const init = async () => {
             try {
@@ -160,14 +171,13 @@ const Expenses: React.FC = () => {
         try {
             const response = await expensesApi.getByDate(date.format('YYYY-MM-DD'));
 
-            // Маппинг: просто добавляем key. tagIds уже есть в ответе от бэкенда!
             const mappedData = response.data.map(item => ({
                 ...item,
                 key: item.id.toString()
             }));
 
             setDataSource(mappedData);
-        } catch (error) {
+        } catch {
             message.error('Ошибка при загрузке трат');
             setDataSource([]);
         } finally {
@@ -178,7 +188,6 @@ const Expenses: React.FC = () => {
     const onSelect: CalendarProps<Dayjs>['onSelect'] = (value) => setSelectedDate(value);
     const disabledDate: CalendarProps<Dayjs>['disabledDate'] = (current) => current && current > dayjs().endOf('day');
 
-    // Сохранение изменений строки
     const handleSave = async (row: Expense) => {
         const newData = [...dataSource];
         const index = newData.findIndex((item) => row.key === item.key);
@@ -186,12 +195,10 @@ const Expenses: React.FC = () => {
 
         const changes: UpdateExpenseDto = {};
 
-        // Сравниваем и формируем DTO только для измененных полей
         if (oldItem.amount !== row.amount) changes.amount = row.amount;
         if (oldItem.description !== row.description) changes.description = row.description;
         if (oldItem.categoryId !== row.categoryId) changes.categoryId = row.categoryId;
 
-        // Сравнение массивов тегов (простое через JSON stringify для курсовой сойдет)
         if (JSON.stringify(oldItem.tagIds.sort()) !== JSON.stringify(row.tagIds.sort())) {
             changes.tagIds = row.tagIds;
         }
@@ -202,17 +209,13 @@ const Expenses: React.FC = () => {
             await expensesApi.update(row.id, changes);
             message.success('Сохранено');
 
-            // Обновляем локальный стейт для мгновенного UI
-            // Важно: обновляем и имена тегов/категории для красоты, если они изменились
             const updatedItem = { ...oldItem, ...row };
 
-            // Если изменилась категория, обновим её имя в локальном стейте
             if (changes.categoryId) {
                 const cat = categories.find(c => c.id === changes.categoryId);
                 if (cat) updatedItem.categoryName = cat.name;
             }
 
-            // Если изменились теги, обновим их имена
             if (changes.tagIds) {
                 updatedItem.tags = changes.tagIds.map(id => {
                     const t = tags.find(tag => tag.id === id);
@@ -222,7 +225,7 @@ const Expenses: React.FC = () => {
 
             newData.splice(index, 1, updatedItem);
             setDataSource(newData);
-        } catch (error) {
+        } catch {
             message.error('Ошибка сохранения');
         }
     };
@@ -239,7 +242,6 @@ const Expenses: React.FC = () => {
     };
 
     const showModal = () => {
-        // Устанавливаем начальную дату равной выбранной в календаре
         createForm.setFieldsValue({
             date: selectedDate,
             amount: undefined,
@@ -256,7 +258,6 @@ const Expenses: React.FC = () => {
     };
     const handleCreateSubmit = async (values: any) => {
         try {
-            // Формируем объект для отправки
             const payload = {
                 categoryId: values.categoryId,
                 amount: values.amount,
@@ -270,7 +271,6 @@ const Expenses: React.FC = () => {
             setIsModalOpen(false);
             createForm.resetFields();
 
-            // Перезагружаем список, чтобы увидеть новую трату
             loadExpenses(selectedDate);
             refreshExpenseDates();
         } catch (error: any) {
@@ -279,7 +279,6 @@ const Expenses: React.FC = () => {
         }
     };
 
-    // Опции для селектов
     const categoryOptions = categories.map(c => ({ label: c.name, value: c.id }));
     const tagOptions = tags.map(t => ({ label: t.name, value: t.id }));
 
@@ -287,7 +286,7 @@ const Expenses: React.FC = () => {
         {
             title: 'Категория',
             dataIndex: 'categoryId',
-            width: 150, // Фиксированная ширина
+            width: 150,
             selectOptions: categoryOptions,
             render: (_, r) => {
                 const cat = categories.find(c => c.id === r.categoryId);
@@ -298,7 +297,7 @@ const Expenses: React.FC = () => {
         {
             title: 'Сумма',
             dataIndex: 'amount',
-            width: 100, // Фиксированная ширина
+            width: 100,
             inputType: 'number',
             render: (t) => <Text strong>{Number(t).toLocaleString()}</Text>,
             onCell: (record) => ({ record, editable: true, dataIndex: 'amount', title: 'Сумма', inputType: 'number', handleSave })
@@ -306,9 +305,8 @@ const Expenses: React.FC = () => {
         {
             title: 'Описание',
             dataIndex: 'description',
-            width: 200, // Можно задать фиксированную или %
+            width: 200,
             inputType: 'text',
-            // ellipsis: false разрешает перенос строк
             ellipsis: false,
             render: (t) => t ? <span style={{ whiteSpace: 'pre-wrap' }}>{t}</span> : <Text type="secondary">-</Text>,
             onCell: (record) => ({ record, editable: true, dataIndex: 'description', title: 'Описание', inputType: 'text', handleSave })
@@ -316,7 +314,7 @@ const Expenses: React.FC = () => {
         {
             title: 'Теги',
             dataIndex: 'tagIds',
-            width: 150, // Фиксированная ширина
+            width: 150,
             isMultiSelect: true,
             selectOptions: tagOptions,
             ellipsis: false,
@@ -330,7 +328,7 @@ const Expenses: React.FC = () => {
         {
             title: 'Действия',
             width: 100,
-            fixed: 'right', // Закрепляем кнопку удаления справа
+            fixed: 'right',
             render: (_, r) => (
                 <Popconfirm title="Удалить?" onConfirm={() => handleDelete(r.key)}>
                     <Button type="text" danger icon={<DeleteOutlined />} />
@@ -341,14 +339,10 @@ const Expenses: React.FC = () => {
 
     const components = { body: { row: EditableRow, cell: EditableCell } };
     const totalAmount = dataSource.reduce((sum, i) => sum + Number(i.amount), 0);
-    // Функция кастомного рендера ячейки календаря
-    // Функция кастомного рендера ячейки календаря
-    // Функция кастомного рендера ячейки дня в календаре (для fullscreen={false})
     const dateCellRender = (current: Dayjs) => {
         const dateStr = current.format('YYYY-MM-DD');
         const hasExpenses = expenseDates.has(dateStr);
 
-        // Возвращаем только дополнительный контент, число будет отрисовано автоматически
         return hasExpenses ? (
             <div style={{
                 width: 6,
@@ -386,7 +380,6 @@ const Expenses: React.FC = () => {
                     <Card
                         title={`Траты за ${selectedDate.format('DD.MM.YYYY')}`}
                         extra={
-                            // Кнопка теперь открывает модалку
                             <Button type="primary" icon={<PlusOutlined />} onClick={showModal}>
                                 Добавить
                             </Button>
@@ -418,9 +411,8 @@ const Expenses: React.FC = () => {
                 </div>
             </Flex>
 
-            {/* МОДАЛЬНОЕ ОКНО СОЗДАНИЯ ТРАТЫ */}
             <Modal
-                title={`Новая трата на ${selectedDate.format('DD.MM.YYYY')}`} // Показываем дату прямо в заголовке
+                title={`Новая трата на ${selectedDate.format('DD.MM.YYYY')}`}
                 open={isModalOpen}
                 onCancel={handleCancel}
                 footer={null}
@@ -430,7 +422,6 @@ const Expenses: React.FC = () => {
                     layout="vertical"
                     onFinish={handleCreateSubmit}
                     initialValues={{
-                        // Убираем date отсюда, так как оно не нужно в форме
                         amount: undefined,
                         description: '',
                         categoryId: undefined,

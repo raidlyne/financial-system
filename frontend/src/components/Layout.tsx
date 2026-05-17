@@ -13,22 +13,21 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const location = useLocation();
 
 
-    // Элементы меню (только навигация по разделам приложения)
     const menuItems = [
         {
-            key: '/budgets', // Новый пункт
+            key: '/budgets',
             icon: <WalletOutlined />,
             label: <Link to="/budgets">Бюджеты</Link>,
         },
         {
-            key: '/statistics', // Новый пункт
-            icon: <BarChartOutlined />,
-            label: <Link to="/statistics">Статистика</Link>,
+            key: '/',
+            icon: <ShoppingCartOutlined />,
+            label: <Link to="/">Траты</Link>,
         },
         {
-            key: '/', // Или '/expenses'
-            icon: <ShoppingCartOutlined />, // Не забудь импортировать иконку
-            label: <Link to="/">Траты</Link>,
+            key: '/statistics',
+            icon: <BarChartOutlined />,
+            label: <Link to="/statistics">Статистика</Link>,
         },
         {
             key: '/me',
@@ -41,12 +40,10 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         <AntLayout style={{ minHeight: '100vh' }}>
             <Header style={{ display: 'flex', alignItems: 'center', padding: '0 24px', justifyContent: 'space-between' }}>
 
-                {/* 1. Логотип слева */}
                 <div style={{ color: 'white', fontSize: '20px', fontWeight: 'bold', minWidth: 100 }}>
                     ERP FinTech
                 </div>
 
-                {/* 2. Меню по центру */}
                 <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
                     <Menu
                         theme="dark"
@@ -57,7 +54,6 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                     />
                 </div>
 
-                {/* 3. Кнопка входа/профиля справа */}
                 <div style={{ minWidth: 100, display: 'flex', justifyContent: 'flex-end' }}>
                     {user ? (
                         <Flex align="center" gap="small">
