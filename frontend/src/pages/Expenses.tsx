@@ -75,7 +75,10 @@ const EditableCell: React.FC<React.PropsWithChildren<EditableCellProps>> = ({
 
             if (inputType === 'number') {
                 const num = Number(values[dataIndex]);
-                if (isNaN(num) || num <= 0) throw new Error('Сумма > 0');
+                if (isNaN(num) || num <= 0) {
+                    message.error('Сумма должна быть больше 0');
+                    return
+                }
                 processedValues = { [dataIndex]: num };
             }
 
@@ -225,8 +228,12 @@ const Expenses: React.FC = () => {
 
             newData.splice(index, 1, updatedItem);
             setDataSource(newData);
-        } catch {
-            message.error('Ошибка сохранения');
+        } catch (err: any){
+            if (typeof err?.response?.data === 'string') {
+                message.error(err.response.data);
+            } else {
+                message.error('Ошибка сохранения');
+            }
         }
     };
 
@@ -273,9 +280,12 @@ const Expenses: React.FC = () => {
 
             loadExpenses(selectedDate);
             refreshExpenseDates();
-        } catch (error: any) {
-            console.error(error);
-            message.error(error.response?.data?.message || 'Ошибка при создании траты');
+        } catch (err: any) {
+            if (typeof err?.response?.data === 'string') {
+                message.error(err.response.data);
+            } else {
+                message.error('Ошибка при создании траты');
+            }
         }
     };
 
