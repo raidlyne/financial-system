@@ -9,6 +9,7 @@ import Profile from './pages/Profile';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Statistics from './pages/Statistics';
 import Expenses from "./pages/Expenses.tsx";
+import Budgets from "./pages/Budgets.tsx";
 
 // Глобальные стили для темного фона всего приложения
 const globalStyles = `
@@ -58,6 +59,13 @@ const AppContent: React.FC = () => {
                     <ProtectedRoute>
                         <AppLayout>
                             <Statistics />
+                        </AppLayout>
+                    </ProtectedRoute>
+                } />
+                <Route path="/budgets" element={
+                    <ProtectedRoute>
+                        <AppLayout>
+                            <Budgets />
                         </AppLayout>
                     </ProtectedRoute>
                 } />
