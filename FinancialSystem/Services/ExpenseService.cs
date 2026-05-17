@@ -21,15 +21,12 @@ public class ExpenseService : IExpenseService
         if (expenseDate > DateOnly.FromDateTime(DateTime.UtcNow))
             throw new ArgumentException("Дата не может быть в будущем");
 
-        // === ПРОВЕРКА СУЩЕСТВОВАНИЯ КАТЕГОРИИ ===
         var categoryExists = await _context.Categories.AnyAsync(c => c.Id == request.CategoryId);
         if (!categoryExists)
         {
             throw new ArgumentException($"Категория с ID {request.CategoryId} не найдена");
         }
-        // ========================================
 
-        // Проверка тегов (если она у тебя уже есть)
         if (request.TagIds != null && request.TagIds.Any())
         {
             var existingTagCount = await _context.Tags.CountAsync(t => request.TagIds.Contains(t.Id));
@@ -61,7 +58,7 @@ public class ExpenseService : IExpenseService
     public async Task<List<ExpenseResponse>> GetExpensesAsync(string userId, DateOnly? dateFilter)
     {
         IQueryable<Expense> query = _context.Expenses
-            .AsNoTracking() // Важно для производительности чтения
+            .AsNoTracking()
             .Include(e => e.Category)
             .Include(e => e.ExpenseTags).ThenInclude(et => et.Tag)
             .Where(e => e.UserId == userId);
@@ -119,7 +116,6 @@ public class ExpenseService : IExpenseService
 
         if (request.TagIds != null)
         {
-            // Проверка тегов
             if (request.TagIds.Any())
             {
                  var existingTagCount = await _context.Tags.CountAsync(t => request.TagIds.Contains(t.Id));
@@ -145,7 +141,6 @@ public class ExpenseService : IExpenseService
         return await GetExpenseByIdAsync(userId, id);
     }
 
-    // Вспомогательный метод для получения одной траты с полными данными
     private async Task<ExpenseResponse?> GetExpenseByIdAsync(string userId, int id)
     {
         var expense = await _context.Expenses
@@ -187,7 +182,6 @@ public class ExpenseService : IExpenseService
 
         if (budget == null) return;
 
-        // Расчет границ месяца для DateOnly
         var startOfMonth = new DateOnly(date.Year, date.Month, 1);
         var endOfMonth = startOfMonth.AddMonths(1);
 
@@ -204,29 +198,6 @@ public class ExpenseService : IExpenseService
         }
     }
 
-    private async Task<ExpenseResponse> MapToResponse(Expense expense)
-    {
-        // Если теги не загружены, догружаем их (ленивая загрузка или явная)
-        if (!expense.ExpenseTags.Any()) 
-        {
-             var loadedExpense = await _context.Expenses
-                 .Include(e => e.ExpenseTags).ThenInclude(et => et.Tag)
-                 .FirstOrDefaultAsync(e => e.Id == expense.Id);
-                 
-             if(loadedExpense != null) expense = loadedExpense;
-        }
-
-        return new ExpenseResponse
-        {
-            Id = expense.Id,
-            CategoryId = expense.CategoryId,
-            CategoryName = expense.Category?.Name ?? "Unknown",
-            Amount = expense.Amount,
-            Date = expense.Date, // Теперь тут DateOnly
-            Description = expense.Description,
-            Tags = expense.ExpenseTags.Select(et => et.Tag?.Name ?? "").ToList()
-        };
-    }
     public async Task<List<DateOnly>> GetExpenseDatesAsync(string userId)
     {
         var dates = await _context.Expenses

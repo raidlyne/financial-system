@@ -69,23 +69,6 @@ namespace FinancialSystem.Migrations
                         .IsUnique();
 
                     b.ToTable("Categories");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Name = "Еда"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            Name = "Транспорт"
-                        },
-                        new
-                        {
-                            Id = 3,
-                            Name = "Развлечения"
-                        });
                 });
 
             modelBuilder.Entity("FinancialSystem.Models.Expense", b =>

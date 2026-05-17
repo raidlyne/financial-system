@@ -4,8 +4,6 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-#pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
-
 namespace FinancialSystem.Migrations
 {
     /// <inheritdoc />
@@ -59,7 +57,7 @@ namespace FinancialSystem.Migrations
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    Name = table.Column<string>(type: "text", nullable: false)
+                    Name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -72,7 +70,7 @@ namespace FinancialSystem.Migrations
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    Name = table.Column<string>(type: "text", nullable: false)
+                    Name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -214,8 +212,8 @@ namespace FinancialSystem.Migrations
                     UserId = table.Column<string>(type: "text", nullable: false),
                     CategoryId = table.Column<int>(type: "integer", nullable: false),
                     Amount = table.Column<decimal>(type: "numeric", nullable: false),
-                    Date = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    Description = table.Column<string>(type: "text", nullable: true)
+                    Date = table.Column<DateOnly>(type: "date", nullable: false),
+                    Description = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -250,16 +248,6 @@ namespace FinancialSystem.Migrations
                         principalTable: "Tags",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.InsertData(
-                table: "Categories",
-                columns: new[] { "Id", "Name" },
-                values: new object[,]
-                {
-                    { 1, "Еда" },
-                    { 2, "Транспорт" },
-                    { 3, "Развлечения" }
                 });
 
             migrationBuilder.CreateIndex(
@@ -305,14 +293,38 @@ namespace FinancialSystem.Migrations
                 column: "CategoryId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Budgets_UserId_CategoryId",
+                table: "Budgets",
+                columns: new[] { "UserId", "CategoryId" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Categories_Name",
+                table: "Categories",
+                column: "Name",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Expenses_CategoryId",
                 table: "Expenses",
                 column: "CategoryId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_ExpenseTags_ExpenseId_TagId",
+                table: "ExpenseTags",
+                columns: new[] { "ExpenseId", "TagId" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_ExpenseTags_TagId",
                 table: "ExpenseTags",
                 column: "TagId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Tags_Name",
+                table: "Tags",
+                column: "Name",
+                unique: true);
         }
 
         /// <inheritdoc />

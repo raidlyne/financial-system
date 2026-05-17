@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FinancialSystem.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260516140322_FixDateToDateOnly")]
-    partial class FixDateToDateOnly
+    [Migration("20260517164136_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -47,6 +47,9 @@ namespace FinancialSystem.Migrations
 
                     b.HasIndex("CategoryId");
 
+                    b.HasIndex("UserId", "CategoryId")
+                        .IsUnique();
+
                     b.ToTable("Budgets");
                 });
 
@@ -60,28 +63,15 @@ namespace FinancialSystem.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.HasKey("Id");
 
-                    b.ToTable("Categories");
+                    b.HasIndex("Name")
+                        .IsUnique();
 
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Name = "Еда"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            Name = "Транспорт"
-                        },
-                        new
-                        {
-                            Id = 3,
-                            Name = "Развлечения"
-                        });
+                    b.ToTable("Categories");
                 });
 
             modelBuilder.Entity("FinancialSystem.Models.Expense", b =>
@@ -102,7 +92,8 @@ namespace FinancialSystem.Migrations
                         .HasColumnType("date");
 
                     b.Property<string>("Description")
-                        .HasColumnType("text");
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
 
                     b.Property<string>("UserId")
                         .IsRequired()
@@ -127,6 +118,9 @@ namespace FinancialSystem.Migrations
 
                     b.HasIndex("TagId");
 
+                    b.HasIndex("ExpenseId", "TagId")
+                        .IsUnique();
+
                     b.ToTable("ExpenseTags");
                 });
 
@@ -140,9 +134,13 @@ namespace FinancialSystem.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
 
                     b.ToTable("Tags");
                 });

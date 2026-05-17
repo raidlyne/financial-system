@@ -7,6 +7,5 @@ public class Tag
     [MaxLength(100)]
     public string Name { get; set; } = string.Empty;
     
-    // Навигационное свойство для связи N:N
     public ICollection<ExpenseTag> ExpenseTags { get; set; } = new List<ExpenseTag>();
 }

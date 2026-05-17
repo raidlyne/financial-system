@@ -6,7 +6,7 @@ public class CategoryResponse
 {
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
-    public decimal? BudgetLimit { get; set; } // Лимит, если установлен
+    public decimal? BudgetLimit { get; set; } 
 }
 
 public class UpdateBudgetRequest

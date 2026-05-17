@@ -54,12 +54,5 @@ public class AppDbContext : IdentityDbContext
         builder.Entity<Budget>()
             .HasIndex(b => new { b.UserId, b.CategoryId })
             .IsUnique();
-            
-        // Начальные данные для категорий (Seed)
-        builder.Entity<Category>().HasData(
-            new Category { Id = 1, Name = "Еда" },
-            new Category { Id = 2, Name = "Транспорт" },
-            new Category { Id = 3, Name = "Развлечения" }
-        );
     }
 }

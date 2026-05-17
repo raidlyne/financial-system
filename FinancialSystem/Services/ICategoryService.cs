@@ -25,11 +25,10 @@ public class CategoryService : ICategoryService
     {
         var categories = await _context.Categories.ToListAsync();
         
-        // Фильтруем бюджеты, где CategoryId не null, и преобразуем ключ к int
         var budgets = await _context.Budgets
             .Where(b => b.UserId == userId && b.CategoryId.HasValue)
             .ToDictionaryAsync(
-                b => b.CategoryId!.Value, // Берем значение int из nullable
+                b => b.CategoryId!.Value, 
                 b => b.LimitAmount
             );
 
@@ -49,13 +48,11 @@ public class CategoryService : ICategoryService
             throw new ArgumentException($"Категория с ID {categoryId} не найдена");
         }
 
-        // 2. Ищем существующий бюджет для этой категории у этого пользователя
         var budget = await _context.Budgets
             .FirstOrDefaultAsync(b => b.UserId == userId && b.CategoryId == categoryId);
 
         if (limitAmount == null)
         {
-            // Если лимит null -> удаляем запись о бюджете (снимаем ограничение)
             if (budget != null)
             {
                 _context.Budgets.Remove(budget);
@@ -63,7 +60,6 @@ public class CategoryService : ICategoryService
         }
         else
         {
-            // Валидация значения
             if (limitAmount < 1 || limitAmount > 10_000_000)
             {
                 throw new ArgumentException("Лимит должен быть от 1 до 10 000 000");
@@ -71,7 +67,6 @@ public class CategoryService : ICategoryService
 
             if (budget == null)
             {
-                // Создаем новый бюджет
                 budget = new Budget
                 {
                     UserId = userId,
@@ -82,7 +77,6 @@ public class CategoryService : ICategoryService
             }
             else
             {
-                // Обновляем существующий
                 budget.LimitAmount = limitAmount.Value;
             }
         }
