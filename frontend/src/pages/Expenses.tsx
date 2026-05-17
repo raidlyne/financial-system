@@ -105,6 +105,7 @@ const EditableCell: React.FC<React.PropsWithChildren<EditableCellProps>> = ({
                 {selectOptions ? (
                     <Select
                         ref={inputRef as any}
+                        showSearch={{ optionFilterProp: 'label' }}
                         onBlur={save}
                         mode={isMultiSelect ? "multiple" : undefined}
                         placeholder="Выберите..."
@@ -444,7 +445,7 @@ const Expenses: React.FC = () => {
                         label="Категория"
                         rules={[{ required: true, message: 'Выберите категорию' }]}
                     >
-                        <Select placeholder="Выберите категорию" options={categoryOptions} />
+                        <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Выберите категорию" options={categoryOptions} />
                     </Form.Item>
 
                     <Form.Item
@@ -476,6 +477,7 @@ const Expenses: React.FC = () => {
                         <Select
                             mode="multiple"
                             placeholder="Выберите теги"
+                            showSearch={{ optionFilterProp: 'label' }}
                             options={tagOptions}
                             maxTagCount="responsive"
                         />
