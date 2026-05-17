@@ -3,8 +3,6 @@ services:
     image: postgres:18.4-alpine
     volumes:
       - ./finance-data:/var/lib/postgresql
-    ports:
-      - "${DB_PORT}:5432"
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
@@ -14,4 +12,26 @@ services:
       interval: 5s
       timeout: 2s
       retries: 2
+    restart: unless-stopped
+    
+  backend:
+    build:
+      context: ./FinancialSystem
+      dockerfile: Dockerfile
+    ports:
+      - "5192:5192"
+    depends_on:
+      database:
+        condition: service_healthy
+    restart: unless-stopped
+    
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    depends_on:
+      backend:
+        condition: service_started
+    ports:
+      - "5173:5173"
     restart: unless-stopped

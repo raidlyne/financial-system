@@ -1,6 +1,0 @@
-@FinancialSystem_HostAddress = http://localhost:5192
-
-GET {{FinancialSystem_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###
