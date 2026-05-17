@@ -98,6 +98,7 @@ const Statistics: React.FC = () => {
       key: "totalSpent",
       align: "right" as const,
       render: (amount: number) => <Text>{amount.toLocaleString()} ₽</Text>,
+      sorter: (a: CategoryStat, b: CategoryStat) => a.totalSpent - b.totalSpent,
     },
     {
       title: "Доля",
@@ -138,7 +139,7 @@ const Statistics: React.FC = () => {
             title="Распределение по категориям"
             style={{ flex: 1, minWidth: 300 }}
           >
-            <div style={{ width: "100%", height: 400 }}>
+            <div style={{ width: "100%", height: 550 }}>
               <ResponsiveContainer>
                 <PieChart>
                   <Pie
