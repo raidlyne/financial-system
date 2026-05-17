@@ -1,11 +1,5 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
-import {
-  type GetRef,
-  InputNumber,
-  type InputRef,
-  Modal,
-  type TableProps,
-} from "antd";
+import { type GetRef, InputNumber, type InputRef, Modal } from "antd";
 import {
   Button,
   Form,
@@ -31,17 +25,25 @@ import {
 } from "../api/expenses";
 import { dictionariesApi, type Category, type ITag } from "../api/dictionaries";
 import type { CalendarProps } from "antd";
+import { type ColumnType } from "antd/es/table";
 
 const { Text } = Typography;
 
 type FormInstance<T> = GetRef<typeof Form<T>>;
 const EditableContext = React.createContext<FormInstance<any> | null>(null);
 
+export interface EditableColumnProps<T> extends ColumnType<T> {
+  editable?: boolean;
+  inputType?: "number" | "text";
+  selectOptions?: any[];
+  isMultiSelect?: boolean;
+}
+
 interface EditableRowProps {
   index: number;
 }
 
-const EditableRow: React.FC<EditableRowProps> = ({ ...props }) => {
+const EditableRow: React.FC<EditableRowProps> = ({ index, ...props }) => {
   const [form] = Form.useForm();
   return (
     <Form form={form} component={false}>
@@ -53,7 +55,6 @@ const EditableRow: React.FC<EditableRowProps> = ({ ...props }) => {
 };
 
 interface EditableCellProps {
-  title: React.ReactNode;
   editable: boolean;
   dataIndex: keyof Expense | "tagIds";
   record: Expense;
@@ -61,6 +62,7 @@ interface EditableCellProps {
   inputType?: "number" | "text";
   selectOptions?: any[];
   isMultiSelect?: boolean;
+  children?: React.ReactNode;
 }
 
 const EditableCell: React.FC<React.PropsWithChildren<EditableCellProps>> = ({
@@ -340,7 +342,7 @@ const Expenses: React.FC = () => {
   }));
   const tagOptions = tags.map((t) => ({ label: t.name, value: t.id }));
 
-  const columns: TableProps<Expense>["columns"] = [
+  const columns: EditableColumnProps<Expense>[] = [
     {
       title: "Категория",
       dataIndex: "categoryId",

@@ -17,26 +17,25 @@ type FormInstance<T> = GetRef<typeof Form<T>>;
 const EditableContext = React.createContext<FormInstance<any> | null>(null);
 
 interface EditableRowProps {
-  index: number;
+  [key: string]: any;
 }
-const EditableRow: React.FC<EditableRowProps> = ({ ...props }) => {
+
+const EditableRow: React.FC<EditableRowProps> = ({ ...restProps }) => {
   const [form] = Form.useForm();
   return (
     <Form form={form} component={false}>
       <EditableContext.Provider value={form}>
-        <tr {...props} />
+        <tr {...restProps} />
       </EditableContext.Provider>
     </Form>
   );
 };
 
 interface EditableCellProps {
-  title: React.ReactNode;
-  editable: boolean;
   dataIndex: keyof CategoryBudget;
   record: CategoryBudget;
   handleSave: (record: CategoryBudget) => void;
-  handleClear: (id: string) => void;
+  children?: React.ReactNode;
 }
 
 const EditableCell: React.FC<React.PropsWithChildren<EditableCellProps>> = ({
@@ -44,7 +43,7 @@ const EditableCell: React.FC<React.PropsWithChildren<EditableCellProps>> = ({
   dataIndex,
   record,
   handleSave,
-  ...restProps
+  ...restProps // Здесь останутся только стандартные атрибуты td (className, style, onClick и т.д.)
 }) => {
   const [editing, setEditing] = useState(false);
   const inputRef = useRef<any>(null);
