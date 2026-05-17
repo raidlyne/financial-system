@@ -1,6 +1,6 @@
 import React from 'react';
 import { Layout as AntLayout, Menu, Button, Flex } from 'antd';
-import { UserOutlined } from '@ant-design/icons';
+import {BarChartOutlined, UserOutlined} from '@ant-design/icons';
 import { Link, useNavigate, useLocation } from 'react-router';
 import { useAuth } from '../context/AuthContext';
 
@@ -18,6 +18,11 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
     // Элементы меню (только навигация по разделам приложения)
     const menuItems = [
+        {
+            key: '/statistics', // Новый пункт
+            icon: <BarChartOutlined />,
+            label: <Link to="/statistics">Статистика</Link>,
+        },
         {
             key: '/', // Или '/expenses'
             icon: <ShoppingCartOutlined />, // Не забудь импортировать иконку
