@@ -17,9 +17,7 @@ services:
     restart: unless-stopped
     
   backend:
-    build:
-      context: ./FinancialSystem
-      dockerfile: Dockerfile
+    image: raidlyne/financial-system-backend:1.0
     ports:
       - "5192:5192"
     depends_on:
@@ -28,9 +26,7 @@ services:
     restart: unless-stopped
     
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
+    image: raidlyne/financial-system-frontend:1.0
     depends_on:
       backend:
         condition: service_started
